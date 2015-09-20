@@ -12,7 +12,34 @@ void debug_println(String out) {
   #endif
 }
 
-int sample_weight()
+int sample_weight() {
+  int weight_accumulator = 0;
+  //Sample needs to occur quick enough that weight isn't affected by the triggering event
+  //Accumulate 8 times to avoid floating point divide
+  for(int ii=0; ii<8; ii++) {
+    weight_accumulator += analogRead(weight_sensor);
+    delay(62);
+  }
+  //Don't care about units for now calibrate later
+  int mean_weight = weight_accumulator >> 3;
+  debug_println("Sampled weight: " + String(mean_weight));
+  return mean_weight;
+}
+
+String get_id_code() {
+  boolean stringIncomplete = true;
+  String id_code;
+  while (altSerial.available()) {
+    char inChar = (char)altSerial.read();
+    if((inChar != 0x02) && stringIncomplete) {
+      id_code += inChar;
+      if (inChar == '\x0d') {
+        stringIncomplete = false;
+      }
+    }
+  }
+  return id_code;
+}
 
 void setup() {
   Serial.begin(9600);
@@ -39,43 +66,18 @@ void loop() {
         }
       }
     }
+    debug_println("Plate id: "+plate_id);
+  
+    int initial_weight = sample_weight();
+
+    
   }
-  debug_println("Plate id: "+plate_id);
 
-  //Sample the initial weight
-  int weight_accumulator = 0;
-  for(int ii=0; ii<8; ii++) {
-    weight_accumulator += analogRead(weight_sensor);
-  }
+
+
+
+
   
-  float initial_weight = weight_accumulator
-  int initial_weight_raw = analogRead(weight_sensor);
-  
-  //TODO: Needs proper calibration
-  int initial_weight = map(initial_weight_raw, 400, 1000, 0, 255);
-  debug_println("
   delay(500);
-
-  
-
-  /*
-  // read the analog in value:
-  sensorValue = analogRead(analogInPin);
-  // map it to the range of the analog out:
-  //value fromlow from high to low to high
-  outputValue = map(sensorValue, 400, 1000, 0, 255);
-  // change the analog out value:
-  analogWrite(analogOutPin, outputValue);
-
-  // print the results to the serial monitor:
-  Serial.print("sensor = " );
-  Serial.print(sensorValue);
-  Serial.print("\t output = ");
-  Serial.println(outputValue);
-
-  // wait 2 milliseconds before the next loop
-  // for the analog-to-digital converter to settle
-  // after the last reading:
-  delay(500);
-  */
 }
+
