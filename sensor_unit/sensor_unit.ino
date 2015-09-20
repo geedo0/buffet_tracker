@@ -7,6 +7,8 @@ AltSoftSerial altSerial;
 const int weight_sensor = A0;
 const int rfid_reset = 13;
 
+const int vessel_id = 0x42;
+
 void debug_println(String out) {
   #ifdef DEBUG
   Serial.println(out);
@@ -55,6 +57,7 @@ void setup() {
 
 void loop() {
   String plate_id = "";
+  int weight_delta;
   debug_println("Loop function started");
   
   //Detect and fetch the RFID if available
@@ -82,14 +85,11 @@ void loop() {
         debug_println("Plate is still present");
       }
     }
-    
+    weight_delta = sample_weight() - initial_weight;
+    debug_println("Change in weight " + String(weight_delta));
+    //vessel_id,plate_id,weight_delta
+    Serial.println(String(vessel_id) + "," + plate_id + "," + String(weight_delta));
   }
-
-
-
-
-
-  
   delay(500);
 }
 
