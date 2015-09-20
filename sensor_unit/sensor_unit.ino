@@ -5,6 +5,7 @@
 AltSoftSerial altSerial;
 
 const int weight_sensor = A0;
+const int rfid_reset = 13;
 
 void debug_println(String out) {
   #ifdef DEBUG
@@ -42,6 +43,9 @@ String get_id_code() {
 }
 
 void setup() {
+  pinMode(rfid_reset, OUTPUT);
+  digitalWrite(rfid_reset, HIGH);
+  delay(10);
   Serial.begin(9600);
   altSerial.begin(9600);
   if(Serial) {
@@ -55,21 +59,29 @@ void loop() {
   
   //Detect and fetch the RFID if available
   if(altSerial.available()) {
-    debug_println("Serial event detected");
-    boolean stringIncomplete = true;
-    while (altSerial.available()) {
-      char inChar = (char)altSerial.read();
-      if((inChar != 0x02) && stringIncomplete) {
-        plate_id += inChar;
-        if (inChar == '\x0d') {
-          stringIncomplete = false;
-        }
+    plate_id = get_id_code();
+    debug_println("Plate id: "+plate_id);
+    int initial_weight = sample_weight();
+    //Figure out when the RFID is lifted
+    delay(1000);
+    while(true) {
+      debug_println("Toggling RFID reset");
+      digitalWrite(rfid_reset, LOW);
+      delay(10);
+      digitalWrite(rfid_reset, HIGH);
+      delay(1000);
+      //Remove junk byte on bus
+      altSerial.read();
+      String new_plate = get_id_code();
+      debug_println("New plate id: " + new_plate);
+      if(new_plate != plate_id) {
+        debug_println("Plate removed");
+        break;
+      }
+      else {
+        debug_println("Plate is still present");
       }
     }
-    debug_println("Plate id: "+plate_id);
-  
-    int initial_weight = sample_weight();
-
     
   }
 
